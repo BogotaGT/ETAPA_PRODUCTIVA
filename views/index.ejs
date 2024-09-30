@@ -1,0 +1,299 @@
+<!-- index.ejs -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Etapa Productiva</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-White">
+        <div class="container-fluid">
+            <div class="navbar-brand">
+                <img src="/img/sena-css-logo.png" alt="SENA Centro de Servicios de Salud Regional Antioquia" class="sena-css-logo">
+            </div>
+            <h1 class="navbar-title mb-0 h1 text-center">SISTEMA DE GESTIÓN DE ETAPA PRODUCTIVA</h1>
+        </div>
+    </nav>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Alternativas de etapa productiva</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Gestiona tu etapa productiva</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Notificaciones</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div id="messageContainer"></div>
+        <form id="aprendizForm">
+            <!-- Contenido del formulario -->
+        </form>
+    </div>
+
+    <div class="container mt-4">
+        <form id="aprendizForm" action="/submit-form" method="POST">
+            <h2 class="form-header">DATOS DEL APRENDIZ</h2>
+        
+        <h3 class="form-subheader mt-4">Datos Personales</h3>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="nombres" class="form-label">Nombres*</label>
+                <input type="text" class="form-control" id="nombres" name="nombres" required>
+            </div>
+            <div class="col-md-4">
+                <label for="primerApellido" class="form-label">Primer apellido*</label>
+                <input type="text" class="form-control" id="primerApellido" name="primerApellido" required>
+            </div>
+            <div class="col-md-4">
+                <label for="segundoApellido" class="form-label">Segundo apellido</label>
+                <input type="text" class="form-control" id="segundoApellido" name="segundoApellido">
+                </div>
+            <div class="col-md-3">
+                <label for="tipoDocumento" class="form-label">Tipo de documento*</label>
+                <select class="form-select" id="tipoDocumento" name="tipoDocumento" required>
+                    <option value="">Seleccione...</option>
+                    <option value="CC">Cédula de ciudadanía</option>
+                    <option value="TI">Tarjeta de identidad</option>
+                    <option value="CE">Cédula de extranjería</option>
+                    <option value="PEP">PEP</option>
+                    <option value="PPT">Permiso de protección temporal</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="numeroDocumento" class="form-label">Número de documento*</label>
+                <input type="text" class="form-control" id="numeroDocumento" name="numeroDocumento" required>
+                </div>
+            <div class="col-md-3">
+                <label for="fechaNacimiento" class="form-label">Fecha de nacimiento*</label>
+                <input type="date" class="form-control" id="fechaNacimiento" name="fechaNacimiento" required>
+            </div>
+            <div class="col-md-3">
+                <label for="eps" class="form-label">EPS</label>
+                <input type="text" class="form-control" id="eps" name="eps">
+            </div>
+            <div class="col-md-3">
+                <label for="estadoCivil" class="form-label">Estado civil</label>
+                <select class="form-select" id="estadoCivil" name="estadoCivil">
+                    <option value="">Seleccione...</option>
+                    <option value="soltero">Soltero/a</option>
+                    <option value="casado">Casado/a</option>
+                    <option value="unionLibre">Unión libre</option>
+                    <option value="viudo">Viudo/a</option>
+                </select>
+            </div>
+        </div>
+
+        <h3 class="form-subheader mt-4">Datos de Ubicación</h3>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="telefonoFijo" class="form-label">Teléfono fijo</label>
+                <input type="tel" class="form-control" id="telefonoFijo" name="telefonoFijo">
+                </div>
+            <div class="col-md-3">
+                <label for="celular" class="form-label">Celular*</label>
+                <input type="tel" class="form-control" id="celular" name="celular" required>
+            </div>
+            <div class="col-md-6">
+                <label for="direccion" class="form-label">Dirección de residencia*</label>
+                <input type="text" class="form-control" id="direccion" name="direccion" required>
+            </div>
+            <div class="col-md-3">
+                <label for="barrio" class="form-label">Barrio</label>
+                <input type="text" class="form-control" id="barrio" name="barrio">
+            </div>
+            <div class="col-md-3">
+                <label for="departamento" class="form-label">Departamento*</label>
+                <select class="form-select" id="departamento" name="departamento" required>
+                    <option value="">Seleccione...</option>
+                    <option value="amazonas">Amazonas</option>
+                    <option value="antioquia">Antioquia</option>
+                    <option value="arauca">Arauca</option>
+                    <option value="atlantico">Atlántico</option>
+                    <option value="bolivar">Bolívar</option>
+                    <option value="boyaca">Boyacá</option>
+                    <option value="caldas">Caldas</option>
+                    <option value="caqueta">Caquetá</option>
+                    <option value="casanare">Casanare</option>
+                    <option value="cauca">Cauca</option>
+                    <option value="cesar">Cesar</option>
+                    <option value="choco">Chocó</option>
+                    <option value="cordoba">Córdoba</option>
+                    <option value="cundinamarca">Cundinamarca</option>
+                    <option value="guainia">Guainía</option>
+                    <option value="guaviare">Guaviare</option>
+                    <option value="huila">Huila</option>
+                    <option value="la guajira">La Guajira</option>
+                    <option value="magdalena">Magdalena</option>
+                    <option value="meta">Meta</option>
+                    <option value="nariño">Nariño</option>
+                    <option value="norte de santander">Norte de Santander</option>
+                    <option value="putumayo">Putumayo</option>
+                    <option value="quindio">Quindío</option>
+                    <option value="risaralda">Risaralda</option>
+                    <option value="san andres y providencia">San Andrés y Providencia</option>
+                    <option value="santander">Santander</option>
+                    <option value="sucre">Sucre</option>
+                    <option value="tolima">Tolima</option>
+                    <option value="valle del cauca">Valle del Cauca</option>
+                    <option value="vaupes">Vaupés</option>
+                    <option value="vichada">Vichada</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="municipio" class="form-label">Municipio*</label>
+                <input type="text" class="form-control" id="municipio" name="municipio" required>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="correoElectronico" class="form-label">Correo electrónico*</label>
+                <input type="email" class="form-control" id="correoElectronico" name="correoElectronico" required>
+            </div>
+        </div>
+
+        <h3 class="form-subheader mt-4">Datos de la Formación</h3>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="fechaInicioFormacion" class="form-label">Fecha inicio de formación</label>
+                <input type="date" class="form-control" id="fechaInicioFormacion" name="fechaInicioFormacion">
+                </div>
+            <div class="col-md-3">
+                <label for="duracionLectiva" class="form-label">Duración lectiva</label>
+                <select class="form-select" id="duracionLectiva" name="duracionLectiva">
+                    <option value="">Seleccione...</option>
+                    <option value="1año">1 año</option>
+                    <option value="18meses">18 meses</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="instructorLectiva" class="form-label">Instructor responsable etapa lectiva</label>
+                <input type="text" class="form-control" id="instructorLectiva" name="instructorLectiva">
+                </div>
+            <div class="col-md-3">
+                <label for="instructorProductiva" class="form-label">Instructor responsable etapa productiva</label>
+                <input type="text" class="form-control" id="instructorProductiva" name="instructorProductiva">
+                </div>
+            <div class="col-md-3">
+                <label for="numeroFicha" class="form-label">Número de ficha*</label>
+                <input type="text" class="form-control" id="numeroFicha" name="numeroFicha" required>
+                </div>
+            <div class="col-md-9">
+                <label for="programaFormacion" class="form-label">Programa de formación*</label>
+                <input type="text" class="form-control" id="programaFormacion" name="programaFormacion" required>
+            </div>
+        </div>
+
+        <h3 class="form-subheader mt-4">Datos de la Alternativa de Etapa Productiva Elegida</h3>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="alternativaSeleccionada" class="form-label">Alternativa seleccionada*</label>
+                <select class="form-select" id="alternativaSeleccionada" name="alternativaSeleccionada" required>
+                    <option value="">Seleccione...</option>
+                    <option value="contratoAprendizaje">Contrato de aprendizaje</option>
+                    <option value="pasantia">Pasantía</option>
+                    <option value="apoyoEntidades">Apoyo a entidades</option>
+                    <option value="vinculoLaboral">Vínculo laboral</option>
+                    <option value="proyectosProductivos">Proyectos productivos</option>
+                    <option value="monitoria">Monitoría</option>
+                    <option value="unidadesProductivas">Unidades productivas familiares</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="areaFormacion" class="form-label">¿En el área de formación?</label>
+                <select class="form-select" id="areaFormacion" name="areaFormacion">
+                    <option value="si">Sí</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="fechaInicioEtapa" class="form-label">Fecha inicio etapa</label>
+                <input type="date" class="form-control" id="fechaInicioEtapa" name="fechaInicioEtapa">
+            </div>
+            <div class="col-md-3">
+                <label for="duracionProductiva" class="form-label">Duración productiva</label>
+                <select class="form-select" id="duracionProductiva" name="duracionProductiva">
+                    <option value="">Seleccione...</option>
+                    <option value="1mes">1 mes</option>
+                    <option value="2meses">2 meses</option>
+                    <option value="3meses">3 meses</option>
+                    <option value="4meses">4 meses</option>
+                    <option value="5meses">5 meses</option>
+                    <option value="6meses">6 meses</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="empresaPatrocinadora" class="form-label">Empresa patrocinadora</label>
+                <input type="text" class="form-control" id="empresaPatrocinadora" name="empresaPatrocinadora">
+            </div>
+            <div class="col-md-6">
+                <label for="areaPractica" class="form-label">Área donde realiza la práctica</label>
+                <input type="text" class="form-control" id="areaPractica" name="areaPractica">
+            </div>
+            <div class="col-md-4">
+                <label for="jefeInmediato" class="form-label">Nombre del jefe inmediato</label>
+                <input type="text" class="form-control" id="jefeInmediato" name="jefeInmediato">
+            </div>
+            <div class="col-md-4">
+                <label for="telefonoEmpresa" class="form-label">Teléfono fijo</label>
+                <input type="tel" class="form-control" id="telefonoEmpresa" name="telefonoEmpresa">
+            </div>
+            <div class="col-md-4">
+                <label for="celularEmpresa" class="form-label">Celular*</label>
+                <input type="tel" class="form-control" id="celularEmpresa" name="celularEmpresa" required>
+            </div>
+            <div class="col-md-4">
+                <label for="direccionEmpresa" class="form-label">Dirección de la empresa</label>
+                <input type="text" class="form-control" id="direccionEmpresa" name="direccionEmpresa">
+            </div>
+            <div class="col-md-4">
+                <label for="correoEmpresa" class="form-label">Correo de la empresa</label>
+                <input type="email" class="form-control" id="correoEmpresa" name="correoEmpresa">
+            </div>
+            <div class="col-md-4">
+                <label for="horario" class="form-label">Horario</label>
+                <input type="text" class="form-control" id="horario" name="horario" placeholder="Ej: L a V 8:00am a 5:00pm">
+            </div>
+        </div>
+
+            <button type="submit" class="btn btn-primary mt-4">Enviar</button>
+        </form>
+    </div>
+
+    <footer class="sena-footer">
+        <div class="footer-content">
+            <div class="logo-container">
+            
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+                <img src="/img/sena-logo.svg" alt="Logo SENA" class="footer-logo">
+            
+            </div>
+            <p class="footer-text">
+                Servicio Nacional de Aprendizaje SENA - Centro de Servicios de Salud - Regional Antioquia<br>
+                Dirección: Calle 51 N. 57 - 70 Torre Sur Piso 9o<br>
+                El SENA brinda a la ciudadanía, atención presencial en las 33 Regionales y 117 Centros de Formación<br>
+                Línea de atención al ciudadano, empresario y línea PQRS: Bogotá: +(57) 601 7366060<br>
+                Línea gratuita y resto del País: 018000 910270
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/formValidation.js"></script>
+
+</body>
+</html>

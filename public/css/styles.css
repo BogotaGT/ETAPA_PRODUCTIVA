@@ -1,0 +1,162 @@
+/* styles.css*/
+body {
+    font-family: Arial, sans-serif;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar {
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    margin-right: 20px;
+    padding: 10px;
+}
+
+.sena-css-logo {
+    height: 180px; 
+    width: auto;
+}
+
+.navbar-title {
+    color: #39a900 !important;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    font-size: 1.5rem; 
+}
+
+.navbar-dark {
+    background-color: #04324d !important;
+}
+
+.navbar-nav .nav-item {
+    position: relative;
+    padding: 0 15px;
+}
+
+.navbar-nav .nav-item:not(:last-child)::after {
+    content: "";
+    border-right: 2px solid #39a900;
+    height: 20px;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.navbar-dark .nav-link:hover {
+    color: #39a900 !important;
+}
+
+.form-header {
+    background-color: #04324d;
+    color: white;
+    padding: 5px 10px; 
+    height: 30px; 
+    line-height: 20px; 
+    font-size: 16px; 
+}
+
+.form-subheader {
+    background-color: #39a900;
+    color: white;
+    padding: 5px 10px; 
+    height: 30px; 
+    line-height: 20px; 
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #04324d;
+    border-color: #04324d;
+    margin-bottom: 2rem
+}
+
+.btn-primary:hover {
+    background-color: #04324d;
+    border-color: #04324d;
+    color: #39a900;
+}
+
+form {
+    margin: 0 40px;
+    margin-bottom: 2rem;
+}
+
+.container.mt-4 {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 2rem;
+}
+
+.sena-footer {
+    background-color: #04324d;
+    width: 100%;
+    padding: 30px 0; 
+    position: relative;
+    overflow: hidden;
+    margin-top: auto;
+}
+
+.footer-content {
+    position: relative;
+    z-index: 2;
+    padding: 20px 0;
+}
+
+.logo-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    flex-wrap: wrap;
+    z-index: 1;
+}
+
+.footer-logo {
+    width: 100px;
+    height: 100px;
+    fill: #39a900;
+    opacity: 0.1; 
+}
+
+.footer-text {
+    color: white;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0 20px;
+    position: relative;
+    z-index: 2;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 768px) {
+    .sena-css-logo {
+        height: 40px; /* Tamaño más pequeño para móviles */
+    }
+    .navbar-title {
+        font-size: 1.2rem;
+    }
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
+body > .sena-footer {
+    position: static;
+}
