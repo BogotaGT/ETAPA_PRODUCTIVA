@@ -1,4 +1,4 @@
-// server.js
+// servidor.js
 const express = require('express');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
@@ -15,11 +15,11 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Configuración de EJS
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '../vistas'));
 
 // Configuración de la base de datos
 const dbConfig = {
@@ -362,7 +362,7 @@ app.get('/admin/buscar-aprendices', async (req, res) => {
 // Ruta para mostrar el formulario de creación de contraseña
 app.get('/crear-password', (req, res) => {
   const email = req.query.email || '';
-  res.render('partials/crear-password', { 
+  res.render('parciales/crear-password', {
     title: 'Crear Contraseña - Sistema de Gestión de Etapa Productiva',
     email: email
   });

@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('aprendizForm');
     
     // Definir los sonidos (asegúrese de que estos archivos existan)
-    const successSound = new Audio('/sounds/success.wav');
-    const errorSound = new Audio('/sounds/error.wav');
+    const successSound = new Audio('/sonidos/success.wav');
+    const errorSound = new Audio('/sonidos/error.wav');
 
     form.addEventListener('submit', function(event) {
         event.preventDefault();

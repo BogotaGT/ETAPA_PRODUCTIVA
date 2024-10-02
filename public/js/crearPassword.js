@@ -2,10 +2,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('crearPasswordForm');
     const successSound = new Howl({
-        src: ['/sounds/success.wav']
+        src: ['/sonidos/success.wav']
     });
     const errorSound = new Howl({
-        src: ['/sounds/error.wav']
+        src: ['/sonidos/error.wav']
     });
 
     // Prellenar el campo de correo electrónico si está disponible en la URL
