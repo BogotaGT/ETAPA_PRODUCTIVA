@@ -1,3 +1,4 @@
+// crearPassword.js
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('crearPasswordForm');
     const successSound = new Howl({

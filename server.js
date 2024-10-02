@@ -3,7 +3,6 @@ const express = require('express');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const mysql = require('mysql2/promise');
-const rateLimit = require("express-rate-limit");
 const helmet = require('helmet');
 const path = require('path');
 const { body, validationResult } = require('express-validator');
@@ -28,7 +27,10 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT
+  port: process.env.DB_PORT,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
 // Pool de conexiones
@@ -38,10 +40,26 @@ const pool = mysql.createPool(dbConfig);
 pool.getConnection((err, connection) => {
   if (err) {
     console.error('Error conectando a la base de datos:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('Se perdió la conexión a la base de datos.');
+    } else if (err.code === 'ER_CON_COUNT_ERROR') {
+      console.error('La base de datos tiene demasiadas conexiones.');
+    } else if (err.code === 'ECONNREFUSED') {
+      console.error('La conexión a la base de datos fue rechazada.');
+    }
     return;
   }
   console.log('Conectado a la base de datos MySQL');
   connection.release();
+});
+
+// Manejo de errores en pool
+pool.on('error', (err) => {
+  console.error('Error inesperado en la pool de MySQL:', err);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.error('Se perdió la conexión a la base de datos. Reconectando...');
+    // Implementar lógica para reconectar
+  }
 });
 
 // Configuración de la sesión
@@ -79,20 +97,17 @@ app.use(session({
 const aprendizValidations = [
   body('nombres').notEmpty().withMessage('El nombre es obligatorio'),
   body('primerApellido').notEmpty().withMessage('El primer apellido es obligatorio'),
-  body('tipoDocumento').notEmpty().withMessage('El tipo de documento es obligatorio'),
-  body('numeroDocumento').notEmpty().withMessage('El número de documento es obligatorio')
-      .isNumeric().withMessage('El número de documento debe contener solo números'),
-  body('fechaNacimiento').notEmpty().withMessage('La fecha de nacimiento es obligatoria')
-      .isDate().withMessage('Ingrese una fecha válida'),
+  body('tipoDocumento').isIn(['CC', 'TI', 'CE', 'PEP', 'PPT']).withMessage('Tipo de documento no válido'),
+  body('numeroDocumento').notEmpty().withMessage('El número de documento es obligatorio'),
+  body('fechaNacimiento').isDate().withMessage('Fecha de nacimiento no válida'),
   body('celular').notEmpty().withMessage('El número de celular es obligatorio'),
   body('direccion').notEmpty().withMessage('La dirección es obligatoria'),
   body('departamento').notEmpty().withMessage('El departamento es obligatorio'),
   body('municipio').notEmpty().withMessage('El municipio es obligatorio'),
-  body('correoElectronico').notEmpty().withMessage('El correo electrónico es obligatorio')
-      .isEmail().withMessage('Ingrese un correo electrónico válido'),
+  body('correoElectronico').isEmail().withMessage('Correo electrónico no válido'),
   body('numeroFicha').notEmpty().withMessage('El número de ficha es obligatorio'),
   body('programaFormacion').notEmpty().withMessage('El programa de formación es obligatorio'),
-  body('alternativaSeleccionada').notEmpty().withMessage('Debe seleccionar una alternativa de etapa productiva')
+  body('alternativaSeleccionada').isIn(['contratoAprendizaje', 'pasantia', 'apoyoEntidades', 'vinculoLaboral', 'proyectosProductivos', 'monitoria', 'unidadesProductivas']).withMessage('Alternativa seleccionada no válida'),
 ];
 
 // Rutas
@@ -100,32 +115,49 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
-app.post('/submit-form', aprendizValidations, async (req, res) => {
-  console.log('Recibida solicitud POST');
-  console.log('Datos recibidos:', req.body);
+app.post('/submit-form',
+    aprendizValidations,
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, errors: errors.array() });
+      }
+      next();
+    },
+    async (req, res) => {
+      const formData = req.body;
 
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-      console.log('Errores de validación:', errors.array());
-      return res.status(400).json({ success: false, errors: errors.array() });
-  }
+      try {
+        const columns = Object.keys(formData).join(', ');
+        const placeholders = Object.keys(formData).map(() => '?').join(', ');
+        const values = Object.values(formData);
 
-  const formData = req.body;
-    
-  try {
-    const [result] = await pool.query('INSERT INTO aprendices SET ?', formData);
-    console.log('Datos insertados correctamente');
-    console.log('Enviando respuesta:', { success: true, message: 'Formulario procesado con éxito', id: result.insertId });
-    return res.status(200).json({ 
-      success: true,
-      message: 'Formulario procesado con éxito',
-      id: result.insertId
-    });
-  } catch (err) {
-    console.error('Error al insertar datos:', err);
-    return res.status(500).json({ success: false, message: 'Error al procesar el formulario', error: err.message });
-  }
-});
+        const sqlQuery = `INSERT INTO aprendices (${columns}) VALUES (${placeholders})`;
+        console.log('SQL Query:', sqlQuery);
+        console.log('Values:', values);
+
+        const [result] = await pool.query(sqlQuery, values);
+
+        console.log('Datos insertados correctamente');
+        console.log('Enviando respuesta:', { success: true, message: 'Formulario procesado con éxito', id: result.insertId });
+        return res.status(200).json({
+          success: true,
+          message: 'Formulario procesado con éxito',
+          id: result.insertId
+        });
+      } catch (err) {
+        console.error('Error al insertar datos:', err);
+        // Manejo más detallado del error
+        if (err.code === 'ER_DUP_ENTRY') {
+          return res.status(400).json({ success: false, message: 'Ya existe un registro con estos datos', error: err.message });
+        } else if (err.code === 'ER_NO_SUCH_TABLE') {
+          return res.status(500).json({ success: false, message: 'La tabla de aprendices no existe', error: err.message });
+        } else {
+          return res.status(500).json({ success: false, message: 'Error al procesar el formulario', error: err.message });
+        }
+      }
+    }
+);
 
       // Ruta para el panel principal del administrador
       app.get('/admin', (req, res) => {
@@ -211,7 +243,10 @@ app.post('/submit-form', aprendizValidations, async (req, res) => {
       console.log("Datos recibidos:", req.body);
       try {
         const id = req.params.id;
-        const updatedData = req.body;   
+        const updatedData = req.body;
+        if (Object.keys(updatedData).length === 0) {
+          return res.status(400).json({ success: false, error: 'No se proporcionaron datos para actualizar' });
+        }
     
          // Mapeo de valores de alternativaSeleccionada
         const alternativaMapping = {
@@ -230,15 +265,11 @@ app.post('/submit-form', aprendizValidations, async (req, res) => {
         }
 
         // Convertir fechas al formato correcto para MySQL
-        if (updatedData.fechaNacimiento) {
-          updatedData.fechaNacimiento = new Date(updatedData.fechaNacimiento).toISOString().split('T')[0];
-        }
-        if (updatedData.fechaInicioFormacion) {
-          updatedData.fechaInicioFormacion = new Date(updatedData.fechaInicioFormacion).toISOString().split('T')[0];
-        }
-        if (updatedData.fechaInicioEtapa) {
-          updatedData.fechaInicioEtapa = new Date(updatedData.fechaInicioEtapa).toISOString().split('T')[0];
-        }
+        ['fechaNacimiento', 'fechaInicioFormacion', 'fechaInicioEtapa'].forEach(field => {
+          if (updatedData[field]) {
+            updatedData[field] = new Date(updatedData[field]).toISOString().split('T')[0];
+          }
+        });
 
         // Eliminar campos vacíos o undefined
         Object.keys(updatedData).forEach(key => 
@@ -250,12 +281,19 @@ app.post('/submit-form', aprendizValidations, async (req, res) => {
           return res.status(400).json({ success: false, error: 'No se proporcionaron datos para actualizar' });
         }
 
-        const [result] = await pool.query('UPDATE aprendices SET ? WHERE id = ?', [updatedData, id]);
-        
+        const setClause = Object.keys(updatedData).map(key => `${key} = ?`).join(', ');
+        const values = [...Object.values(updatedData), id];
+
+        const sqlQuery = `UPDATE aprendices SET ${setClause} WHERE id = ?`;
+        console.log('SQL Query:', sqlQuery);
+        console.log('Values:', values);
+
+        const [result] = await pool.query(sqlQuery, values);
+
         if (result.affectedRows === 0) {
           return res.status(404).json({ success: false, error: 'Aprendiz no encontrado' });
         }
-        
+
         res.json({ success: true, message: 'Aprendiz actualizado con éxito' });
       } catch (err) {
         console.error('Error al actualizar aprendiz:', err);
@@ -266,7 +304,7 @@ app.post('/submit-form', aprendizValidations, async (req, res) => {
     // Ruta para eliminar un aprendiz
     app.delete('/admin/aprendiz/eliminar/:id', async (req, res) => {
       try {
-          const [result] = await pool.query('DELETE FROM aprendices WHERE id = ?', [req.params.id]);
+          const [result]  = await pool.query('DELETE FROM aprendices WHERE id = ?', [req.params.id]);
           if (result.affectedRows === 0) {
               return res.status(404).json({ success: false, message: 'Aprendiz no encontrado' });
           }
@@ -277,43 +315,47 @@ app.post('/submit-form', aprendizValidations, async (req, res) => {
       }
   });
 
-    //Ruta para la busqueda de aprendices
-    app.get('/admin/buscar-aprendices', async (req, res) => {
-      try {
+    //Ruta para la búsqueda de aprendices
+app.get('/admin/buscar-aprendices', async (req, res) => {
+  try {
+    const conditions = [];
+    const params = [];
 
-      let query = 'SELECT * FROM aprendices WHERE 1=1';
-      const params = [];
-
-      if (req.query.nombre) {
-          query += ' AND (nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ?)';
-          const nombreParam = `%${req.query.nombre}%`;
-          params.push(nombreParam, nombreParam, nombreParam);
-      }
-
-      if (req.query.documento) {
-          query += ' AND numeroDocumento = ?';
-          params.push(req.query.documento);
-      }
-
-      if (req.query.programaFormacion) {
-          query += ' AND programaFormacion = ?';
-          params.push(req.query.programaFormacion);
-      }
-
-      if (req.query.alternativaSeleccionada) {
-        query += ' AND alternativaSeleccionada = ?';
-        params.push(req.query.alternativaSeleccionada);
+    if (req.query.nombre) {
+      conditions.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ?)');
+      const nombreParam = `%${req.query.nombre}%`;
+      params.push(nombreParam, nombreParam, nombreParam);
     }
 
-      console.log('Query:', query);
-      console.log('Params:', params);
+    if (req.query.documento) {
+      conditions.push('numeroDocumento = ?');
+      params.push(req.query.documento);
+    }
 
-      const [rows] = await pool.query(query, params);
-      console.log('Resultados:', rows.length);
-      res.json(rows);
-  } catch (err) {
-      console.error('Error en la búsqueda:', err);
-      res.status(500).json({ error: 'Error en la búsqueda' });
+    if (req.query.programaFormacion) {
+      conditions.push('programaFormacion = ?');
+      params.push(req.query.programaFormacion);
+    }
+
+    if (req.query.alternativaSeleccionada) {
+      conditions.push('alternativaSeleccionada = ?');
+      params.push(req.query.alternativaSeleccionada);
+    }
+
+    let query = 'SELECT * FROM aprendices';
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+        console.log('Query:', query);
+        console.log('Params:', params);
+
+        const [rows] = await pool.query(query, params);
+        console.log('Resultados:', rows.length);
+        res.json(rows);
+    } catch (err) {
+        console.error('Error en la búsqueda:', err);
+        res.status(500).json({ error: 'Error en la búsqueda' });
   }
 });
 

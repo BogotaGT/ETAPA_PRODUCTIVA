@@ -1,5 +1,4 @@
 // public/js/formValidation.js
-
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('aprendizForm');
     
