@@ -80,16 +80,38 @@
             </div>
             <div class="col-md-3">
                 <label for="eps" class="form-label">EPS</label>
-                <input type="text" class="form-control" id="eps" name="eps">
-            </div>
-            <div class="col-md-3">
-                <label for="estadoCivil" class="form-label">Estado civil</label>
-                <select class="form-select" id="estadoCivil" name="estadoCivil">
+                <select class="form-select" id="eps" name="eps">
                     <option value="">Seleccione...</option>
-                    <option value="soltero">Soltero/a</option>
-                    <option value="casado">Casado/a</option>
-                    <option value="unionLibre">Unión libre</option>
-                    <option value="viudo">Viudo/a</option>
+                    <option value="COOSALUD EPS-S">COOSALUD EPS-S</option>
+                    <option value="NUEVA EPS">NUEVA EPS</option>
+                    <option value="MUTUAL SER">MUTUAL SER</option>
+                    <option value="ALIANSALUD EPS">ALIANSALUD EPS</option>
+                    <option value="SALUD TOTAL EPS S.A.">SALUD TOTAL EPS S.A.</option>
+                    <option value="EPS SANITAS">EPS SANITAS</option>
+                    <option value="EPS SURA">EPS SURA</option>
+                    <option value="FAMISANAR">FAMISANAR</option>
+                    <option value="SERVICIO OCCIDENTAL DE SALUD EPS SOS">SERVICIO OCCIDENTAL DE SALUD EPS SOS</option>
+                    <option value="SALUD MIA">SALUD MIA</option>
+                    <option value="COMFENALCO VALLE">COMFENALCO VALLE</option>
+                    <option value="COMPENSAR EPS">COMPENSAR EPS</option>
+                    <option value="EPM - EMPRESAS PUBLICAS DE MEDELLIN">EPM - EMPRESAS PUBLICAS DE MEDELLIN</option>
+                    <option value="FONDO DE PASIVO SOCIAL DE FERROCARRILES NACIONALES DE COLOMBIA">FONDO DE PASIVO SOCIAL DE FERROCARRILES NACIONALES DE COLOMBIA</option>
+                    <option value="CAJACOPI ATLANTICO">CAJACOPI ATLANTICO</option>
+                    <option value="CAPRESOCA">CAPRESOCA</option>
+                    <option value="COMFACHOCO">COMFACHOCO</option>
+                    <option value="COMFAORIENTE">COMFAORIENTE</option>
+                    <option value="EPS FAMILIAR DE COLOMBIA">EPS FAMILIAR DE COLOMBIA</option>
+                    <option value="ASMET SALUD">ASMET SALUD</option>
+                    <option value="EMSSANAR E.S.S.">EMSSANAR E.S.S.</option>
+                    <option value="CAPITAL SALUD EPS-S">CAPITAL SALUD EPS-S</option>
+                    <option value="SAVIA SALUD EPS">SAVIA SALUD EPS</option>
+                    <option value="DUSAKAWI EPSI">DUSAKAWI EPSI</option>
+                    <option value="ASOCIACION INDIGENA DEL CAUCA EPSI">ASOCIACION INDIGENA DEL CAUCA EPSI</option>
+                    <option value="ANAS WAYUU EPSI">ANAS WAYUU EPSI</option>
+                    <option value="MALLAMAS EPSI">MALLAMAS EPSI</option>
+                    <option value="PIJAOS SALUD EPSI">PIJAOS SALUD EPSI</option>
+                    <option value="SALUD BÓLIVAR EPS SAS">SALUD BÓLIVAR EPS SAS</option>
+                    <option value="NO APLICA">NO APLICA</option>
                 </select>
             </div>
         </div>
@@ -116,44 +138,14 @@
                 <label for="departamento" class="form-label">Departamento*</label>
                 <select class="form-select" id="departamento" name="departamento" required>
                     <option value="">Seleccione...</option>
-                    <option value="amazonas">Amazonas</option>
-                    <option value="antioquia">Antioquia</option>
-                    <option value="arauca">Arauca</option>
-                    <option value="atlantico">Atlántico</option>
-                    <option value="bolivar">Bolívar</option>
-                    <option value="boyaca">Boyacá</option>
-                    <option value="caldas">Caldas</option>
-                    <option value="caqueta">Caquetá</option>
-                    <option value="casanare">Casanare</option>
-                    <option value="cauca">Cauca</option>
-                    <option value="cesar">Cesar</option>
-                    <option value="choco">Chocó</option>
-                    <option value="cordoba">Córdoba</option>
-                    <option value="cundinamarca">Cundinamarca</option>
-                    <option value="guainia">Guainía</option>
-                    <option value="guaviare">Guaviare</option>
-                    <option value="huila">Huila</option>
-                    <option value="la guajira">La Guajira</option>
-                    <option value="magdalena">Magdalena</option>
-                    <option value="meta">Meta</option>
-                    <option value="nariño">Nariño</option>
-                    <option value="norte de santander">Norte de Santander</option>
-                    <option value="putumayo">Putumayo</option>
-                    <option value="quindio">Quindío</option>
-                    <option value="risaralda">Risaralda</option>
-                    <option value="san andres y providencia">San Andrés y Providencia</option>
-                    <option value="santander">Santander</option>
-                    <option value="sucre">Sucre</option>
-                    <option value="tolima">Tolima</option>
-                    <option value="valle del cauca">Valle del Cauca</option>
-                    <option value="vaupes">Vaupés</option>
-                    <option value="vichada">Vichada</option>
                 </select>
             </div>
 
             <div class="col-md-3">
                 <label for="municipio" class="form-label">Municipio*</label>
-                <input type="text" class="form-control" id="municipio" name="municipio" required>
+                <select class="form-select" id="municipio" name="municipio" required>
+                    <option value="">Seleccione un departamento primero</option>
+                </select>
             </div>
             
             <div class="col-md-3">
@@ -169,19 +161,19 @@
                 <input type="date" class="form-control" id="fechaInicioFormacion" name="fechaInicioFormacion">
                 </div>
             <div class="col-md-3">
-                <label for="duracionLectiva" class="form-label">Duración lectiva</label>
-                <select class="form-select" id="duracionLectiva" name="duracionLectiva">
-                    <option value="">Seleccione...</option>
-                    <option value="1año">1 año</option>
-                    <option value="18meses">18 meses</option>
-                </select>
+                <label for="fechaInicioLectiva" class="form-label">Fecha inicio etapa lectiva</label>
+                <input type="date" class="form-control" id="fechaInicioLectiva" name="fechaInicioLectiva">
             </div>
             <div class="col-md-3">
-                <label for="instructorLectiva" class="form-label">Instructor responsable etapa lectiva</label>
+                <label for="fechaFinLectiva" class="form-label">Fecha fin etapa lectiva</label>
+                <input type="date" class="form-control" id="fechaFinLectiva" name="fechaFinLectiva">
+            </div>
+            <div class="col-md-3">
+                <label for="instructorLectiva" class="form-label">Instructor/a responsable etapa lectiva</label>
                 <input type="text" class="form-control" id="instructorLectiva" name="instructorLectiva">
                 </div>
             <div class="col-md-3">
-                <label for="instructorProductiva" class="form-label">Instructor responsable etapa productiva</label>
+                <label for="instructorProductiva" class="form-label">Instructor/a responsable etapa productiva</label>
                 <input type="text" class="form-control" id="instructorProductiva" name="instructorProductiva">
                 </div>
             <div class="col-md-3">
@@ -190,15 +182,19 @@
                 </div>
             <div class="col-md-9">
                 <label for="programaFormacion" class="form-label">Programa de formación*</label>
-                <input type="text" class="form-control" id="programaFormacion" name="programaFormacion" required>
+                <select class="form-select" id="programaFormacion" name="programaFormacion" required>
+                    <option value="">Seleccione...</option>
+                    <option value="tecnoActividadFisica">Tecnología en actividad física</option>
+                    <option value="tecnoEntrenamientoDeportivo">Tecnología en entrenamiento deportivo</option>
+                </select>
             </div>
         </div>
 
-        <h3 class="form-subheader mt-4">Datos de la Alternativa de Etapa Productiva Elegida</h3>
+        <h3 class="form-subheader mt-4">Datos de la Alternativa de Etapa Productiva</h3>
         <div class="row g-3">
             <div class="col-md-4">
                 <label for="alternativaSeleccionada" class="form-label">Alternativa seleccionada*</label>
-                <select class="form-select" id="alternativaSeleccionada" name="alternativaSeleccionada" required>
+                <select class="form-select" id="alternativaSeleccionada" name="alternativaSeleccionada">
                     <option value="">Seleccione...</option>
                     <option value="contratoAprendizaje">Contrato de aprendizaje</option>
                     <option value="pasantia">Pasantía</option>
@@ -217,20 +213,12 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="fechaInicioEtapa" class="form-label">Fecha inicio etapa</label>
-                <input type="date" class="form-control" id="fechaInicioEtapa" name="fechaInicioEtapa">
+                <label for="fechaInicioProductiva" class="form-label">Fecha inicio etapa productiva</label>
+                <input type="date" class="form-control" id="fechaInicioProductiva" name="fechaInicioProductiva">
             </div>
             <div class="col-md-3">
-                <label for="duracionProductiva" class="form-label">Duración productiva</label>
-                <select class="form-select" id="duracionProductiva" name="duracionProductiva">
-                    <option value="">Seleccione...</option>
-                    <option value="1mes">1 mes</option>
-                    <option value="2meses">2 meses</option>
-                    <option value="3meses">3 meses</option>
-                    <option value="4meses">4 meses</option>
-                    <option value="5meses">5 meses</option>
-                    <option value="6meses">6 meses</option>
-                </select>
+                <label for="fechaFinProductiva" class="form-label">Fecha fin etapa productiva</label>
+                <input type="date" class="form-control" id="fechaFinProductiva" name="fechaFinProductiva">
             </div>
             <div class="col-md-6">
                 <label for="empresaPatrocinadora" class="form-label">Empresa patrocinadora</label>
@@ -293,6 +281,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/formValidation.js"></script>
     <script src="/js/formValidation.js"></script>
 
 </body>

@@ -16,10 +16,12 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+app.use('/data', express.static(path.join(__dirname, '../data')));
+
 
 // Configuración de EJS
-app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../vistas'));
+app.set('view engine', 'ejs');
 
 // Configuración de la base de datos
 const dbConfig = {
@@ -40,16 +42,24 @@ const pool = mysql.createPool(dbConfig);
 pool.getConnection((err, connection) => {
   if (err) {
     console.error('Error conectando a la base de datos:', err);
+    console.error('Configuración de conexión:', {
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME,
+      port: process.env.DB_PORT
+    });
     if (err.code === 'PROTOCOL_CONNECTION_LOST') {
       console.error('Se perdió la conexión a la base de datos.');
     } else if (err.code === 'ER_CON_COUNT_ERROR') {
       console.error('La base de datos tiene demasiadas conexiones.');
     } else if (err.code === 'ECONNREFUSED') {
       console.error('La conexión a la base de datos fue rechazada.');
+    } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+      console.error('Acceso denegado. Verifique las credenciales de la base de datos.');
     }
     return;
   }
-  console.log('Conectado a la base de datos MySQL');
+  console.log('Conectado exitosamente a la base de datos MySQL');
   connection.release();
 });
 
@@ -112,20 +122,15 @@ const aprendizValidations = [
 
 // Rutas
 app.get('/', (req, res) => {
-  res.render('index');
+  res.render('aprendiz/index');
 });
 
 app.post('/submit-form',
     aprendizValidations,
-    (req, res, next) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ success: false, errors: errors.array() });
-      }
-      next();
-    },
     async (req, res) => {
+      console.log('Datos recibidos en /submit-form:', req.body);
       const formData = req.body;
+      delete formData.password;
 
       try {
         const columns = Object.keys(formData).join(', ');
@@ -138,27 +143,27 @@ app.post('/submit-form',
 
         const [result] = await pool.query(sqlQuery, values);
 
-        console.log('Datos insertados correctamente');
-        console.log('Enviando respuesta:', { success: true, message: 'Formulario procesado con éxito', id: result.insertId });
-        return res.status(200).json({
+        console.log('Datos insertados correctamente, ID:', result.insertId);
+        const redirectUrl = `/crear-password?email=${encodeURIComponent(formData.correoElectronico)}`;
+        console.log('URL de redirección:', redirectUrl);
+
+        const responseData ={
           success: true,
           message: 'Formulario procesado con éxito',
-          id: result.insertId
-        });
+          id: result.insertId,
+          redirect: redirectUrl
+        };
+        console.log('Enviando respuesta al cliente:', responseData);
+        res.status(200).json(responseData);
       } catch (err) {
         console.error('Error al insertar datos:', err);
-        // Manejo más detallado del error
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(400).json({ success: false, message: 'Ya existe un registro con estos datos', error: err.message });
-        } else if (err.code === 'ER_NO_SUCH_TABLE') {
-          return res.status(500).json({ success: false, message: 'La tabla de aprendices no existe', error: err.message });
-        } else {
-          return res.status(500).json({ success: false, message: 'Error al procesar el formulario', error: err.message });
-        }
+        res.status(500).json({
+          success: false,
+          message: 'Error al procesar el formulario',
+          error: err.message });
       }
     }
 );
-
       // Ruta para el panel principal del administrador
       app.get('/admin', (req, res) => {
         res.render('admin/dashboard');
@@ -362,6 +367,7 @@ app.get('/admin/buscar-aprendices', async (req, res) => {
 // Ruta para mostrar el formulario de creación de contraseña
 app.get('/crear-password', (req, res) => {
   const email = req.query.email || '';
+  console.log('Renderizando página crear-password para email:', email);
   res.render('parciales/crear-password', {
     title: 'Crear Contraseña - Sistema de Gestión de Etapa Productiva',
     email: email
@@ -380,21 +386,16 @@ app.post('/crear-password', async (req, res) => {
     if (aprendiz.length === 0) {
       return res.status(400).json({ success: false, message: 'No se encontró un aprendiz con ese correo electrónico' });
     }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await pool.query('UPDATE aprendices SET password = ? WHERE correoElectronico = ?', [hashedPassword, correoElectronico]);
+      res.json({ success: true, message: 'Contraseña creada con éxito' });
+    } catch (error) {
+      console.error('Error al crear la contraseña:', error);
+      res.status(500).json({ success: false, message: 'Error al crear la contraseña' });
+    }
+  });
 
-    // Hash de la contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Actualizar la contraseña del aprendiz
-    await pool.query('UPDATE aprendices SET password = ? WHERE correoElectronico = ?', [hashedPassword, correoElectronico]);
-
-    res.json({ success: true, message: 'Contraseña creada con éxito' });
-  } catch (error) {
-    console.error('Error al crear la contraseña:', error);
-    res.status(500).json({ success: false, message: 'Error al crear la contraseña' });
-  }
-});
-
-// Iniciar el servidor
-app.listen(port, () => {
-console.log(`Servidor corriendo en http://localhost:${port}`);
-});
+  // Iniciar el servidor
+  app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`);
+  });

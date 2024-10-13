@@ -1,12 +1,15 @@
 // crearPassword.js
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('crearPasswordForm');
-    const successSound = new Howl({
-        src: ['/sonidos/success.wav']
-    });
-    const errorSound = new Howl({
-        src: ['/sonidos/error.wav']
-    });
+    let successSound, errorSound;
+
+    // Inicializar sonidos después de la interacción del usuario
+    document.body.addEventListener('click', initSounds, { once: true });
+
+    function initSounds() {
+        successSound = new Howl({ src: ['/sonidos/success.wav'] });
+        errorSound = new Howl({ src: ['/sonidos/error.wav'] });
+    }
 
     // Prellenar el campo de correo electrónico si está disponible en la URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -87,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(jsonData)
         })
-        .then(data => {
+            .then(response => response.json())
+            .then(data => {
             console.log('Datos recibidos:', data);
             if (data.success) {
                 showSuccessMessage('¡Contraseña creada con éxito! Redirigiendo al inicio de sesión...');
