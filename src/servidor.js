@@ -94,7 +94,7 @@ app.use(session({
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "default-src": ["'self'", "https:", "data:", "blob:"],
-        "script-src": ["'self'", "'unsafe-inline'", "https:", "data:"],
+        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "data:"],
         "script-src-attr": ["'unsafe-inline'"],
         "style-src": ["'self'", "'unsafe-inline'", "https:"],
         "img-src": ["'self'", "https:", "data:"],
@@ -153,14 +153,15 @@ app.post('/submit-form',
           id: result.insertId,
           redirect: redirectUrl
         };
-        console.log('Enviando respuesta al cliente:', responseData);
+        console.log('Enviando respuesta al cliente:', JSON.stringify(responseData));
         res.status(200).json(responseData);
       } catch (err) {
         console.error('Error al insertar datos:', err);
         res.status(500).json({
           success: false,
           message: 'Error al procesar el formulario',
-          error: err.message });
+          error: err.message
+        });
       }
     }
 );
@@ -187,7 +188,7 @@ app.post('/submit-form',
       // Ruta para manejar la solicitud de listar aprendices
       app.get('/admin/listar-aprendices', async (req, res) => {
         const page = parseInt(req.query.page) || 1;
-        const limit = 50; // número de registros por página
+        const limit = 8; // número de registros por página
         const offset = (page - 1) * limit;
 
         try {
@@ -394,6 +395,68 @@ app.post('/crear-password', async (req, res) => {
       res.status(500).json({ success: false, message: 'Error al crear la contraseña' });
     }
   });
+
+app.post('/admin/aprendices-data', async (req, res) => {
+  try {
+    const draw = req.body.draw;
+    const start = parseInt(req.body.start);
+    const length = parseInt(req.body.length);
+    const searchValue = req.body.search.value;
+
+    let query = 'SELECT * FROM aprendices';
+    let countQuery = 'SELECT COUNT(*) as total FROM aprendices';
+    let whereClause = [];
+    let params = [];
+
+    // Agregar condiciones de búsqueda
+    if (searchValue) {
+      whereClause.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ? OR numeroDocumento LIKE ?)');
+      params.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
+    }
+
+    // Agregar filtros adicionales
+    if (req.body.nombre) {
+      whereClause.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ?)');
+      params.push(`%${req.body.nombre}%`, `%${req.body.nombre}%`, `%${req.body.nombre}%`);
+    }
+    if (req.body.documento) {
+      whereClause.push('numeroDocumento = ?');
+      params.push(req.body.documento);
+    }
+    if (req.body.programaFormacion) {
+      whereClause.push('programaFormacion = ?');
+      params.push(req.body.programaFormacion);
+    }
+    if (req.body.alternativaSeleccionada) {
+      whereClause.push('alternativaSeleccionada = ?');
+      params.push(req.body.alternativaSeleccionada);
+    }
+
+    // Agregar WHERE a las consultas si hay condiciones
+    if (whereClause.length > 0) {
+      const whereString = whereClause.join(' AND ');
+      query += ' WHERE ' + whereString;
+      countQuery += ' WHERE ' + whereString;
+    }
+
+    // Agregar orden y límites
+    query += ' ORDER BY numeroDocumento LIMIT ?, ?';
+    params.push(start, length);
+
+    const [rows] = await pool.query(query, params);
+    const [countResult] = await pool.query(countQuery, params.slice(0, -2));
+
+    res.json({
+      draw: draw,
+      recordsTotal: countResult[0].total,
+      recordsFiltered: countResult[0].total,
+      data: rows
+    });
+  } catch (err) {
+    console.error('Error al obtener datos de aprendices:', err);
+    res.status(500).json({ error: 'Error al obtener datos de aprendices' });
+  }
+});
 
   // Iniciar el servidor
   app.listen(port, () => {

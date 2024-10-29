@@ -33,3 +33,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Otras funciones globales que puedan ser necesarias en múltiples páginas
 });
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+    // Limpiar los campos de filtro
+    document.getElementById('nombreApellido').value = '';
+    document.getElementById('numeroDocumento').value = '';
+    document.getElementById('programaFormacion').value = '';
+    document.getElementById('alternativa').value = '';
+
+    // Si estás usando DataTables, añade esto para limpiar los filtros de la tabla
+    if (typeof table !== 'undefined' && table.ajax) {
+        table.search('').columns().search('').draw();
+    }
+}
+
+// Agregar event listener al botón de limpiar filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const limpiarFiltrosBtn = document.getElementById('limpiarFiltrosBtn');
+    if (limpiarFiltrosBtn) {
+        limpiarFiltrosBtn.addEventListener('click', limpiarFiltros);
+    }
+});

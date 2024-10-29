@@ -78,37 +78,40 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(jsonData)
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Respuesta completa del servidor:', data);
-                if (data.success) {
-                    showSuccessMessage('¡Registro exitoso! Redirigiendo para crear contraseña...');
-                    if (successSound) {
-                        successSound.play().catch(e => console.error('Error al reproducir sonido:', e));
-                    }
-                    if (data.redirect) {
-                        console.log('Intentando redireccionar a:', data.redirect);
-                        setTimeout(() => {
-                            window.location.href = data.redirect;
-                        }, 2000);
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.text(); // Cambiamos response.json() a response.text()
+            })
+            .then(text => {
+                console.log('Response text:', text);
+                try {
+                    const data = JSON.parse(text);
+                    console.log('Parsed data:', data);
+                    if (data.success) {
+                        showSuccessMessage('¡Registro exitoso! Redirigiendo para crear contraseña...');
+                        if (data.redirect) {
+                            console.log('Intentando redireccionar a:', data.redirect);
+                            setTimeout(() => {
+                                window.location.href = data.redirect;
+                            }, 2000);
+                        } else {
+                            console.error('No se proporcionó URL de redirección');
+                        }
                     } else {
-                        console.error('No se proporcionó URL de redirección');
+                        showErrorMessage(data.message || 'Hubo un error al procesar el formulario. Por favor, inténtelo de nuevo.');
                     }
-                } else {
-                    showErrorMessage(data.message || 'Hubo un error al procesar el formulario. Por favor, inténtelo de nuevo.');
-                    if (errorSound) {
-                        errorSound.play().catch(e => console.error('Error al reproducir sonido:', e));
-                    }
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    showErrorMessage('Hubo un error al procesar la respuesta del servidor. Por favor, inténtelo de nuevo.');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Fetch error:', error);
                 showErrorMessage('Hubo un error al procesar la solicitud. Por favor, inténtelo de nuevo.');
-                if (errorSound) {
-                    errorSound.play().catch(e => console.error('Error al reproducir sonido:', e));
-                }
             });
     }
+    
 
     function showSuccessMessage(message) {
         const alertDiv = document.createElement('div');
