@@ -1,0 +1,91 @@
+<!-- Ruta: vistas/administrador/editar-aprendiz.ejs -->
+<!-- Propósito: Interfaz para edición de datos de aprendices, integrada con utilidadesAdmin.js -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Aprendiz - SENA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<%- include('../parciales/admin-header') %>
+
+<div class="container mt-4">
+    <h2>Editar Aprendiz</h2>
+
+    <div id="messageContainer"></div>
+
+    <form id="editarAprendizForm" method="POST">
+        <% for (let key in aprendiz) { %>
+            <% if (key !== 'id' && key !== 'created_at') { %>
+                <div class="mb-3">
+                    <label for="<%= key %>" class="form-label">
+                        <%= key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim() %>
+                    </label>
+
+                    <% if (key.toLowerCase().includes('fecha')) { %>
+                        <input type="date"
+                               class="form-control"
+                               id="<%= key %>"
+                               name="<%= key %>"
+                               value="<%= aprendiz[key] ? new Date(aprendiz[key]).toISOString().split('T')[0] : '' %>">
+
+                    <% } else if (key === 'tipoDocumento') { %>
+                        <select class="form-select" id="<%= key %>" name="<%= key %>">
+                            <option value="CC" <%= aprendiz[key] === 'CC' ? 'selected' : '' %>>Cédula de Ciudadanía</option>
+                            <option value="TI" <%= aprendiz[key] === 'TI' ? 'selected' : '' %>>Tarjeta de Identidad</option>
+                            <option value="CE" <%= aprendiz[key] === 'CE' ? 'selected' : '' %>>Cédula de Extranjería</option>
+                            <option value="PEP" <%= aprendiz[key] === 'PEP' ? 'selected' : '' %>>Permiso Especial de Permanencia</option>
+                            <option value="PPT" <%= aprendiz[key] === 'PPT' ? 'selected' : '' %>>Permiso por Protección Temporal</option>
+                        </select>
+
+                    <% } else if (key === 'alternativaSeleccionada') { %>
+                        <select class="form-select" id="<%= key %>" name="<%= key %>">
+                            <option value="contratoAprendizaje" <%= aprendiz[key] === 'contratoAprendizaje' ? 'selected' : '' %>>
+                                Contrato de Aprendizaje
+                            </option>
+                            <option value="pasantia" <%= aprendiz[key] === 'pasantia' ? 'selected' : '' %>>
+                                Pasantía
+                            </option>
+                            <option value="apoyoEntidades" <%= aprendiz[key] === 'apoyoEntidades' ? 'selected' : '' %>>
+                                Apoyo a Entidades
+                            </option>
+                            <option value="proyectosProductivos" <%= aprendiz[key] === 'proyectosProductivos' ? 'selected' : '' %>>
+                                Proyecto Productivo
+                            </option>
+                            <option value="monitoria" <%= aprendiz[key] === 'monitoria' ? 'selected' : '' %>>
+                                Monitoría
+                            </option>
+                        </select>
+
+                    <% } else { %>
+                        <input type="text"
+                               class="form-control"
+                               id="<%= key %>"
+                               name="<%= key %>"
+                               value="<%= aprendiz[key] || '' %>">
+                    <% } %>
+                </div>
+            <% } %>
+        <% } %>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="/admin/listar-aprendices" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<%- include('../parciales/admin-footer') %>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+    import utilidadesAdmin from '/js/utilidadesAdmin.js';
+    utilidadesAdmin.configurarEventosFormulario();
+</script>
+</body>
+</html>

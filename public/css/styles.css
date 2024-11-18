@@ -1,4 +1,6 @@
-/* public/css/styles.css*/
+/* Ruta: public/css/styles.css */
+/* Propósito: Estilos principales de la aplicación */
+
 body {
     font-family: Arial, sans-serif;
     background-color: white;
@@ -76,7 +78,7 @@ body {
 .btn-primary {
     background-color: #04324d;
     border-color: #04324d;
-    margin-bottom: 2rem
+    margin: 0 0 2rem 0;
 }
 
 .btn-primary:hover {
@@ -86,8 +88,7 @@ body {
 }
 
 form {
-    margin: 0 40px;
-    margin-bottom: 2rem;
+    margin: 0 40px 2rem;
 }
 
 .container.mt-4 {

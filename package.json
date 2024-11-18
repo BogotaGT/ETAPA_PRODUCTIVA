@@ -1,10 +1,11 @@
 {
   "name": "sena_etapa_productiva",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sistema de gestión de etapa productiva para el SENA",
   "main": "src/servidor.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/servidor.js",
+    "dev": "nodemon src/servidor.js"
   },
   "keywords": [],
   "author": "",
@@ -13,16 +14,16 @@
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "dotenv": "^16.4.5",
-    "ejs": "^3.1.10",
-    "express": "^4.20.0",
+    "ejs": "^3.1.9",
+    "express": "^4.21.1",
     "express-mysql-session": "^3.0.3",
-    "express-rate-limit": "^7.4.0",
-    "express-session": "^1.18.0",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
     "express-validator": "^7.2.0",
-    "helmet": "^7.1.0",
-    "howler": "^2.2.4",
-    "mysql2": "^3.11.0",
-    "send": "^0.19.0",
-    "serve-static": "^1.16.0"
+    "helmet": "^7.2.0",
+    "mysql2": "^3.11.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }

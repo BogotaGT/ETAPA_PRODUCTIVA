@@ -1,0 +1,201 @@
+<!-- Ruta: vistas/administrador/dashboard.ejs -->
+<!-- Propósito: Panel principal del administrador que proporciona acceso rápido
+     a todas las funcionalidades y muestra información relevante del sistema. -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administrador - SENA</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome para iconos -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <!-- Estilos locales -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin-styles.css">
+</head>
+<body>
+<%- include('../parciales/admin-header') %>
+
+<!-- Barra de navegación principal -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="verDocumentacion">
+                    <i class="fas fa-file-alt"></i> Verificar Documentación
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/listar-aprendices">
+                    <i class="fas fa-users"></i> Listar Aprendices
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- Resumen estadístico -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Aprendices</h5>
+                    <p class="card-text h2" id="totalAprendices">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">En Etapa Productiva</h5>
+                    <p class="card-text h2" id="enEtapaProductiva">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Pendientes</h5>
+                    <p class="card-text h2" id="pendientes">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Documentos por Revisar</h5>
+                    <p class="card-text h2" id="documentosPendientes">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido dinámico -->
+    <div class="row">
+        <!-- Últimos registros -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Últimos Registros
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="ultimosRegistros">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Actividad reciente -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> Actividad Reciente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group" id="actividadReciente">
+                        <div class="text-center">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="messageContainer" class="message-container"></div>
+
+<%- include('../parciales/admin-footer') %>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script type="module">
+    import { showSuccessMessage, showErrorMessage } from '/js/utils.js';
+    import utilidadesAdmin from '/js/utilidadesAdmin.js';
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        // Cargar datos iniciales
+        try {
+            const response = await fetch('/admin/dashboard-data');
+            const data = await response.json();
+
+            if (data.success) {
+                actualizarEstadisticas(data.estadisticas);
+                cargarUltimosRegistros(data.ultimosRegistros);
+                cargarActividadReciente(data.actividad);
+            } else {
+                showErrorMessage('Error al cargar datos del dashboard');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showErrorMessage('Error al cargar el dashboard');
+        }
+
+        // Event listeners
+        document.getElementById('verDocumentacion')?.addEventListener('click', async function(e) {
+            e.preventDefault();
+            await utilidadesAdmin.cargarContenido('verificar-documentacion');
+        });
+
+        // Función para actualizar estadísticas
+        function actualizarEstadisticas(estadisticas) {
+            document.getElementById('totalAprendices').textContent = estadisticas.total || 0;
+            document.getElementById('enEtapaProductiva').textContent = estadisticas.enEtapa || 0;
+            document.getElementById('pendientes').textContent = estadisticas.pendientes || 0;
+            document.getElementById('documentosPendientes').textContent = estadisticas.documentos || 0;
+        }
+
+        // Función para cargar últimos registros
+        function cargarUltimosRegistros(registros = []) {
+            const contenedor = document.getElementById('ultimosRegistros');
+            contenedor.innerHTML = registros.map(registro => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${registro.nombre} ${registro.apellido}</h6>
+                            <small>${new Date(registro.fecha).toLocaleDateString()}</small>
+                        </div>
+                        <p class="mb-1">${registro.programa}</p>
+                    </div>
+                `).join('') || '<div class="list-group-item">No hay registros recientes</div>';
+        }
+
+        // Función para cargar actividad reciente
+        function cargarActividadReciente(actividades = []) {
+            const contenedor = document.getElementById('actividadReciente');
+            contenedor.innerHTML = actividades.map(actividad => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${actividad.tipo}</h6>
+                            <small>${new Date(actividad.fecha).toLocaleString()}</small>
+                        </div>
+                        <p class="mb-1">${actividad.descripcion}</p>
+                    </div>
+                `).join('') || '<div class="list-group-item">No hay actividad reciente</div>';
+        }
+
+        // Inicializar funcionalidades administrativas
+        utilidadesAdmin.inicializar();
+    });
+</script>
+</body>
+</html>

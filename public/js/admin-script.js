@@ -1,4 +1,6 @@
-//*public/js/admin-script.js
+// Ruta: public/js/admin-script.js
+// Propósito: Maneja la funcionalidad del panel de administración
+
 document.addEventListener('DOMContentLoaded', function() {
     // Funciones para cargar contenido dinámicamente
     const cargarContenido = (seccion) => {
@@ -27,31 +29,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Event listeners para los botones de navegación
     addClickListener('verDocumentacion', 'verificarDocumentacion');
     addClickListener('gestionarUsuarios', 'gestionarUsuarios');
     addClickListener('cargarDatos', 'cargarDatos');
 
-    // Otras funciones globales que puedan ser necesarias en múltiples páginas
+    // Manejar evento de eliminación global
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('eliminar-aprendiz')) {
+            const id = e.target.dataset.id;
+            if (confirm('¿Está seguro de que desea eliminar este aprendiz?')) {
+                eliminarAprendiz(id);
+            }
+        }
+    });
 });
 
-// Función para limpiar filtros
-function limpiarFiltros() {
-    // Limpiar los campos de filtro
-    document.getElementById('nombreApellido').value = '';
-    document.getElementById('numeroDocumento').value = '';
-    document.getElementById('programaFormacion').value = '';
-    document.getElementById('alternativa').value = '';
-
-    // Si estás usando DataTables, añade esto para limpiar los filtros de la tabla
-    if (typeof table !== 'undefined' && table.ajax) {
-        table.search('').columns().search('').draw();
-    }
+// Función para eliminar aprendiz
+function eliminarAprendiz(id) {
+    fetch(`/admin/aprendiz/eliminar/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Aprendiz eliminado exitosamente');
+                // Recargar la página actual
+                window.location.reload();
+            } else {
+                alert('Error al eliminar el aprendiz: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar la solicitud');
+        });
 }
 
-// Agregar event listener al botón de limpiar filtros
-document.addEventListener('DOMContentLoaded', function() {
-    const limpiarFiltrosBtn = document.getElementById('limpiarFiltrosBtn');
-    if (limpiarFiltrosBtn) {
-        limpiarFiltrosBtn.addEventListener('click', limpiarFiltros);
-    }
-});
+// Exportar funciones necesarias al scope global
+window.eliminarAprendiz = eliminarAprendiz;
+window.cargarContenido = cargarContenido;

@@ -1,141 +1,92 @@
-// crearPassword.js
+// Ruta: public/js/crearPassword.js
+// Propósito: Maneja la validación y envío del formulario de creación de contraseña
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('crearPasswordForm');
     let successSound, errorSound;
 
-    // Inicializar sonidos después de la interacción del usuario
-    document.body.addEventListener('click', initSounds, { once: true });
-
+    // Inicializar sonidos
     function initSounds() {
-        successSound = new Howl({ src: ['/sonidos/success.wav'] });
-        errorSound = new Howl({ src: ['/sonidos/error.wav'] });
+        try {
+            successSound = new Audio('/sonidos/success.wav');
+            errorSound = new Audio('/sonidos/error.wav');
+            successSound.load();
+            errorSound.load();
+        } catch (error) {
+            console.warn('No se pudieron cargar los archivos de sonido:', error);
+        }
     }
 
-    // Prellenar el campo de correo electrónico si está disponible en la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get('email');
-    if (email) {
-        document.getElementById('correoElectronico').value = decodeURIComponent(email);
+    function validatePassword(password) {
+        // Mínimo 8 caracteres, al menos una letra y un número
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+        return passwordRegex.test(password);
     }
 
-    form.addEventListener('submit', function(event) {
+    async function handleSubmit(event) {
         event.preventDefault();
-        if (validateForm()) {
-            submitForm();
+
+        const password = form.querySelector('#password').value;
+        const confirmPassword = form.querySelector('#confirmPassword').value;
+        const correoElectronico = form.querySelector('#correoElectronico').value;
+
+        // Validar contraseña
+        if (!validatePassword(password)) {
+            showErrorMessage('La contraseña debe tener al menos 8 caracteres, una letra y un número');
+            await playSound(errorSound);
+            return;
         }
-    });
 
-    function validateForm() {
-        let isValid = true;
+        // Validar que las contraseñas coincidan
+        if (password !== confirmPassword) {
+            showErrorMessage('Las contraseñas no coinciden');
+            await playSound(errorSound);
+            return;
+        }
 
-        const requiredFields = form.querySelectorAll('[required]');
-        requiredFields.forEach(field => {
-            if (!field.value.trim()) {
-                isValid = false;
-                showError(field, 'Este campo es obligatorio');
-            } else {
-                clearError(field);
+        try {
+            const response = await fetch('/crear-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    correoElectronico,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al crear la contraseña');
             }
-        });
 
-        const emailField = form.querySelector('#correoElectronico');
-        if (emailField.value && !isValidEmail(emailField.value)) {
-            isValid = false;
-            showError(emailField, 'Ingrese un correo electrónico válido');
-        }
-
-        const passwordField = form.querySelector('#password');
-        const confirmPasswordField = form.querySelector('#confirmPassword');
-        if (passwordField.value !== confirmPasswordField.value) {
-            isValid = false;
-            showError(confirmPasswordField, 'Las contraseñas no coinciden');
-        }
-
-        if (!isValid) {
-            errorSound.play();
-        }
-
-        return isValid;
-    }
-
-    function showError(field, message) {
-        clearError(field);
-        field.classList.add('is-invalid');
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'invalid-feedback animate__animated animate__shakeX';
-        errorDiv.textContent = message;
-        field.parentNode.appendChild(errorDiv);
-    }
-
-    function clearError(field) {
-        field.classList.remove('is-invalid');
-        const errorDiv = field.parentNode.querySelector('.invalid-feedback');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-    }
-
-    function isValidEmail(email) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-    function submitForm() {
-        const formData = new FormData(form);
-        const jsonData = Object.fromEntries(formData.entries());
-
-        fetch('/crear-password', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData)
-        })
-            .then(response => response.json())
-            .then(data => {
-            console.log('Datos recibidos:', data);
-            if (data.success) {
-                showSuccessMessage('¡Contraseña creada con éxito! Redirigiendo al inicio de sesión...');
-                successSound.play();
-                form.reset();
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 3000);
-            } else {
-                showErrorMessage(data.message || 'Hubo un error al crear la contraseña. Por favor, inténtelo de nuevo.');
-                errorSound.play();
+            if (!data.success) {
+                showErrorMessage(data.message || 'Error al crear la contraseña');
+                await playSound(errorSound);
+                return;
             }
-        })
-        .catch(error => {
+
+            // Mostrar mensaje de éxito y reproducir sonido
+            showSuccessMessage('¡Contraseña creada exitosamente! Redirigiendo...');
+            await playSound(successSound);
+
+            // Redirigir después de mostrar el mensaje
+            setTimeout(() => {
+                window.location.href = data.data?.redirect || '/aprendiz/dashboard';
+            }, 1500);
+
+        } catch (error) {
             console.error('Error:', error);
-            showErrorMessage('Hubo un error al procesar la solicitud. Por favor, inténtelo de nuevo.');
-            errorSound.play();
-        });
+            showErrorMessage('Error al procesar la solicitud');
+            await playSound(errorSound);
+        }
     }
 
-    function showSuccessMessage(message) {
-        showMessage(message, 'success');
-    }
+    // Event listeners
+    form.addEventListener('submit', handleSubmit);
 
-    function showErrorMessage(message) {
-        showMessage(message, 'danger');
-    }
-
-    function showMessage(message, type) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} mt-3 animate__animated animate__fadeIn`;
-        alertDiv.textContent = message;
-        const messageContainer = document.getElementById('messageContainer');
-        messageContainer.innerHTML = '';
-        messageContainer.appendChild(alertDiv);
-        setTimeout(() => {
-            alertDiv.classList.remove('animate__fadeIn');
-            alertDiv.classList.add('animate__fadeOut');
-            setTimeout(() => alertDiv.remove(), 500);
-        }, 4500);
-    }
+    // Inicialización
+    initSounds();
 });
-
-
-
-
-

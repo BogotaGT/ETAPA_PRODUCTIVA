@@ -1,464 +1,185 @@
-// servidor.js
-const express = require('express');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
-const mysql = require('mysql2/promise');
-const helmet = require('helmet');
-const path = require('path');
-const { body, validationResult } = require('express-validator');
-require('dotenv').config();
-const bcrypt = require('bcrypt');
+// Ruta: src/servidor.js
+// Propósito: Archivo principal del servidor con configuración básica y rutas principales
 
+const express = require('express');
+const { Request, Response, NextFunction } = require('express');
+const path = require('path');
+const { body } = require('express-validator');
+const { pool, verifyDatabaseConnection } = require('./config/database');
+const setupMiddlewares = require('./middlewares');
+const rutasAprendiz = require('./rutas/aprendiz/rutasRegistro');
+const rutasAprendices = require('./rutas/administrador/rutasAprendices');
+const aprendizValidaciones = require('./validaciones/aprendizValidaciones');
+require('dotenv').config();
+
+// Variables iniciales
 const app = express();
 const port = process.env.PORT || 3000;
+let server;
+let dbConnected = false;
+let isShuttingDown = false;
 
-// Middleware
+// Middleware básico
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/data', express.static(path.join(__dirname, '../data')));
 
-
-// Configuración de EJS
-app.set('views', path.join(__dirname, '../vistas'));
-app.set('view engine', 'ejs');
-
-// Configuración de la base de datos
-const dbConfig = {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-};
-
-// Pool de conexiones
-const pool = mysql.createPool(dbConfig);
-
-// Verificar la conexión a la base de datos
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('Error conectando a la base de datos:', err);
-    console.error('Configuración de conexión:', {
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      database: process.env.DB_NAME,
-      port: process.env.DB_PORT
-    });
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      console.error('Se perdió la conexión a la base de datos.');
-    } else if (err.code === 'ER_CON_COUNT_ERROR') {
-      console.error('La base de datos tiene demasiadas conexiones.');
-    } else if (err.code === 'ECONNREFUSED') {
-      console.error('La conexión a la base de datos fue rechazada.');
-    } else if (err.code === 'ER_ACCESS_DENIED_ERROR') {
-      console.error('Acceso denegado. Verifique las credenciales de la base de datos.');
+// Configuración de archivos estáticos
+app.use(express.static(path.join(__dirname, '../public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.wav')) {
+      res.set('Content-Type', 'audio/wav');
     }
-    return;
-  }
-  console.log('Conectado exitosamente a la base de datos MySQL');
-  connection.release();
-});
-
-// Manejo de errores en pool
-pool.on('error', (err) => {
-  console.error('Error inesperado en la pool de MySQL:', err);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.error('Se perdió la conexión a la base de datos. Reconectando...');
-    // Implementar lógica para reconectar
-  }
-});
-
-// Configuración de la sesión
-const sessionStore = new MySQLStore({}, pool);
-
-app.use(session({
-  key: 'session_cookie_name',
-  secret: process.env.SESSION_SECRET,
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: false, // Cambiar a true si usas HTTPS
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 // 1 día
   }
 }));
 
-  // Middleware de seguridad
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "default-src": ["'self'", "https:", "data:", "blob:"],
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "data:"],
-        "script-src-attr": ["'unsafe-inline'"],
-        "style-src": ["'self'", "'unsafe-inline'", "https:"],
-        "img-src": ["'self'", "https:", "data:"],
-        "connect-src": ["'self'", "https:"],
-      },
-    },
-  }));
+app.use('/data', express.static(path.join(__dirname, '../data')));
 
-// Validaciones
-const aprendizValidations = [
-  body('nombres').notEmpty().withMessage('El nombre es obligatorio'),
-  body('primerApellido').notEmpty().withMessage('El primer apellido es obligatorio'),
-  body('tipoDocumento').isIn(['CC', 'TI', 'CE', 'PEP', 'PPT']).withMessage('Tipo de documento no válido'),
-  body('numeroDocumento').notEmpty().withMessage('El número de documento es obligatorio'),
-  body('fechaNacimiento').isDate().withMessage('Fecha de nacimiento no válida'),
-  body('celular').notEmpty().withMessage('El número de celular es obligatorio'),
-  body('direccion').notEmpty().withMessage('La dirección es obligatoria'),
-  body('departamento').notEmpty().withMessage('El departamento es obligatorio'),
-  body('municipio').notEmpty().withMessage('El municipio es obligatorio'),
-  body('correoElectronico').isEmail().withMessage('Correo electrónico no válido'),
-  body('numeroFicha').notEmpty().withMessage('El número de ficha es obligatorio'),
-  body('programaFormacion').notEmpty().withMessage('El programa de formación es obligatorio'),
-  body('alternativaSeleccionada').isIn(['contratoAprendizaje', 'pasantia', 'apoyoEntidades', 'vinculoLaboral', 'proyectosProductivos', 'monitoria', 'unidadesProductivas']).withMessage('Alternativa seleccionada no válida'),
-];
+// Configuración de vistas
+app.set('views', path.join(__dirname, '../vistas'));
+app.set('view engine', 'ejs');
 
-// Rutas
+// Verificar variables de entorno requeridas
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME || !process.env.DB_PORT) {
+  console.error('Error: Variables de entorno de base de datos no configuradas');
+  process.exit(1);
+}
+
+// Configurar middlewares
+if (typeof setupMiddlewares === 'function') {
+  setupMiddlewares(app);
+}
+
+// Verificar conexión al iniciar
+verifyDatabaseConnection()
+    .then(connected => {
+      if (!connected) {
+        console.error('No se pudo establecer la conexión inicial con la base de datos');
+        process.exit(1);
+      }
+      dbConnected = true;
+      console.log('Conexión inicial a la base de datos establecida exitosamente');
+    })
+    .catch(error => {
+      console.error('Error al verificar la conexión inicial:', error);
+      process.exit(1);
+    });
+
+// Middleware de verificación de base de datos
+const dbConnectionCheck = (req, res, next) => {
+  if (!dbConnected) {
+    res.status(503).render('parciales/error', {
+      message: 'Servicio no disponible',
+      error: {
+        status: 503,
+        description: 'Error de conexión con la base de datos'
+      }
+    });
+    return;
+  }
+  next();
+};
+
+// Aplicar middleware de verificación de BD a todas las rutas
+app.use(dbConnectionCheck);
+
+// Rutas principales
 app.get('/', (req, res) => {
   res.render('aprendiz/index');
 });
 
-app.post('/submit-form',
-    aprendizValidations,
-    async (req, res) => {
-      console.log('Datos recibidos en /submit-form:', req.body);
-      const formData = req.body;
-      delete formData.password;
+// Aplicar rutas
+app.use('/', rutasAprendiz);
+app.use('/admin', rutasAprendices);
 
-      try {
-        const columns = Object.keys(formData).join(', ');
-        const placeholders = Object.keys(formData).map(() => '?').join(', ');
-        const values = Object.values(formData);
+// Manejo de errores global
+app.use((error, req, res, next) => {
+  const statusCode = error?.status || 500;
+  const errorMessage = error?.message || 'Error interno del servidor';
 
-        const sqlQuery = `INSERT INTO aprendices (${columns}) VALUES (${placeholders})`;
-        console.log('SQL Query:', sqlQuery);
-        console.log('Values:', values);
+  console.error('Error no manejado:', error);
 
-        const [result] = await pool.query(sqlQuery, values);
-
-        console.log('Datos insertados correctamente, ID:', result.insertId);
-        const redirectUrl = `/crear-password?email=${encodeURIComponent(formData.correoElectronico)}`;
-        console.log('URL de redirección:', redirectUrl);
-
-        const responseData ={
-          success: true,
-          message: 'Formulario procesado con éxito',
-          id: result.insertId,
-          redirect: redirectUrl
-        };
-        console.log('Enviando respuesta al cliente:', JSON.stringify(responseData));
-        res.status(200).json(responseData);
-      } catch (err) {
-        console.error('Error al insertar datos:', err);
-        res.status(500).json({
-          success: false,
-          message: 'Error al procesar el formulario',
-          error: err.message
-        });
-      }
+  return res.status(statusCode).render('parciales/error', {
+    message: errorMessage,
+    error: {
+      status: statusCode,
+      description: process.env.NODE_ENV === 'development' ?
+          (error?.message || 'Error desconocido') :
+          'Error interno'
     }
-);
-      // Ruta para el panel principal del administrador
-      app.get('/admin', (req, res) => {
-        res.render('admin/dashboard');
-      });
-
-      // Ruta para verificar documentación
-      app.get('/admin/verificarDocumentacion', (req, res) => {
-        res.render('admin/verificarDocumentacion');
-      });
-
-      // Ruta para gestionar usuarios
-      app.get('/admin/gestionarUsuarios', (req, res) => {
-        res.render('admin/gestionarUsuarios');
-      });
-
-      // Ruta para cargar datos
-      app.get('/admin/cargarDatos', (req, res) => {
-        res.render('admin/cargarDatos');
-      });
-
-      // Ruta para manejar la solicitud de listar aprendices
-      app.get('/admin/listar-aprendices', async (req, res) => {
-        const page = parseInt(req.query.page) || 1;
-        const limit = 8; // número de registros por página
-        const offset = (page - 1) * limit;
-
-        try {
-          const [countResult] = await pool.query('SELECT COUNT(*) as total FROM aprendices');
-          const total = countResult[0].total;
-          const totalPages = Math.ceil(total / limit);
-
-            // Obtener programas de formación únicos
-          const [programasResult] = await pool.query('SELECT DISTINCT programaFormacion FROM aprendices');
-          const programasFormacion = programasResult.map(row => row.programaFormacion);
-
-          // Obtener los aprendices para la página actual
-          const [aprendices] = await pool.query('SELECT * FROM aprendices LIMIT ? OFFSET ?', [limit, offset]);
-          
-          res.render('admin/listar-aprendices', { 
-            aprendices, 
-            currentPage: page, 
-            totalPages,
-            totalRecords: total,
-            limit,
-            programasFormacion
-          });
-        } catch (err) {
-          console.error('Error al obtener aprendices:', err);
-          res.status(500).send('Error al obtener aprendices');
-        }
-      });
-
-  // Ruta para ver detalles de un aprendiz
-  app.get('/admin/aprendiz/:id', async (req, res) => {
-    try {
-        const [aprendiz] = await pool.query('SELECT * FROM aprendices WHERE id = ?', [req.params.id]);
-        if (aprendiz.length === 0) {
-            return res.status(404).send('Aprendiz no encontrado');
-        }
-        res.render('admin/ver-aprendiz', { aprendiz: aprendiz[0] });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error al obtener los detalles del aprendiz');
-    }
+  });
 });
 
-    // Ruta para mostrar el formulario de edición de un aprendiz
-    app.get('/admin/aprendiz/editar/:id', async (req, res) => {
-      try {
-        const [rows] = await pool.query('SELECT * FROM aprendices WHERE id = ?', [req.params.id]);
-        if (rows.length === 0) {
-          return res.status(404).send('Aprendiz no encontrado');
-        }
-        res.render('admin/editar-aprendiz', { aprendiz: rows[0] });
-      } catch (err) {
-        console.error('Error al obtener datos del aprendiz:', err);
-        res.status(500).send('Error al obtener los datos del aprendiz para editar');
-      }
-    });
-    app.post('/admin/aprendiz/editar/:id', async (req, res) => {
-      console.log("Solicitud de edición recibida para el ID:", req.params.id);
-      console.log("Datos recibidos:", req.body);
-      try {
-        const id = req.params.id;
-        const updatedData = req.body;
-        if (Object.keys(updatedData).length === 0) {
-          return res.status(400).json({ success: false, error: 'No se proporcionaron datos para actualizar' });
-        }
-    
-         // Mapeo de valores de alternativaSeleccionada
-        const alternativaMapping = {
-          'contrato': 'contratoAprendizaje',
-          'pasantia': 'pasantia',
-          'apoyo': 'apoyoEntidades',
-          'vinculo': 'vinculoLaboral',
-          'proyectos': 'proyectosProductivos',
-          'monitoria': 'monitoria',
-          'unidades': 'unidadesProductivas'
-        };
-        
-        // Corregir el valor de alternativaSeleccionada si es necesario
-        if (updatedData.alternativaSeleccionada) {
-          updatedData.alternativaSeleccionada = alternativaMapping[updatedData.alternativaSeleccionada] || updatedData.alternativaSeleccionada;
-        }
-
-        // Convertir fechas al formato correcto para MySQL
-        ['fechaNacimiento', 'fechaInicioFormacion', 'fechaInicioEtapa'].forEach(field => {
-          if (updatedData[field]) {
-            updatedData[field] = new Date(updatedData[field]).toISOString().split('T')[0];
-          }
-        });
-
-        // Eliminar campos vacíos o undefined
-        Object.keys(updatedData).forEach(key => 
-          (updatedData[key] === '' || updatedData[key] === undefined) && delete updatedData[key]
-        );
-
-        // Verificar si hay datos para actualizar
-        if (Object.keys(updatedData).length === 0) {
-          return res.status(400).json({ success: false, error: 'No se proporcionaron datos para actualizar' });
-        }
-
-        const setClause = Object.keys(updatedData).map(key => `${key} = ?`).join(', ');
-        const values = [...Object.values(updatedData), id];
-
-        const sqlQuery = `UPDATE aprendices SET ${setClause} WHERE id = ?`;
-        console.log('SQL Query:', sqlQuery);
-        console.log('Values:', values);
-
-        const [result] = await pool.query(sqlQuery, values);
-
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ success: false, error: 'Aprendiz no encontrado' });
-        }
-
-        res.json({ success: true, message: 'Aprendiz actualizado con éxito' });
-      } catch (err) {
-        console.error('Error al actualizar aprendiz:', err);
-        res.status(500).json({ success: false, error: 'Error al actualizar los datos del aprendiz: ' + err.message });
-      }
-    });
-
-    // Ruta para eliminar un aprendiz
-    app.delete('/admin/aprendiz/eliminar/:id', async (req, res) => {
-      try {
-          const [result]  = await pool.query('DELETE FROM aprendices WHERE id = ?', [req.params.id]);
-          if (result.affectedRows === 0) {
-              return res.status(404).json({ success: false, message: 'Aprendiz no encontrado' });
-          }
-          res.json({ success: true, message: 'Aprendiz eliminado con éxito' });
-      } catch (err) {
-          console.error('Error al eliminar aprendiz:', err);
-          res.status(500).json({ success: false, message: 'Error al eliminar el aprendiz' });
-      }
+// Inicialización del servidor
+if (!module.parent) {
+  server = app.listen(port, () => {
+    console.log(`Servidor corriendo en http://localhost:${port}`);
   });
 
-    //Ruta para la búsqueda de aprendices
-app.get('/admin/buscar-aprendices', async (req, res) => {
+  // Manejar errores del servidor
+  server.on('error', (error) => {
+    const errorDetails = {
+      syscall: error.syscall,
+      code: error.code,
+      message: error.message
+    };
+
+    if (errorDetails.syscall !== 'listen') {
+      throw error;
+    }
+
+    const bind = typeof port === 'string'
+        ? `Pipe ${port}`
+        : `Port ${port}`;
+
+    switch (errorDetails.code) {
+      case 'EACCES':
+        console.error(`${bind} requiere privilegios elevados`);
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        console.error(`${bind} ya está en uso`);
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+}
+
+// Manejo de señales de terminación
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Función de cierre graceful
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`${signal} recibido. Iniciando apagado graceful...`);
+
   try {
-    const conditions = [];
-    const params = [];
+    await pool.end();
+    console.log('Conexiones de base de datos cerradas');
 
-    if (req.query.nombre) {
-      conditions.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ?)');
-      const nombreParam = `%${req.query.nombre}%`;
-      params.push(nombreParam, nombreParam, nombreParam);
-    }
+    server.close(() => {
+      console.log('Servidor HTTP cerrado');
+      process.exit(0);
+    });
 
-    if (req.query.documento) {
-      conditions.push('numeroDocumento = ?');
-      params.push(req.query.documento);
-    }
+    setTimeout(() => {
+      console.error('Forzando cierre después de 10s');
+      process.exit(1);
+    }, 10000);
 
-    if (req.query.programaFormacion) {
-      conditions.push('programaFormacion = ?');
-      params.push(req.query.programaFormacion);
-    }
-
-    if (req.query.alternativaSeleccionada) {
-      conditions.push('alternativaSeleccionada = ?');
-      params.push(req.query.alternativaSeleccionada);
-    }
-
-    let query = 'SELECT * FROM aprendices';
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-        console.log('Query:', query);
-        console.log('Params:', params);
-
-        const [rows] = await pool.query(query, params);
-        console.log('Resultados:', rows.length);
-        res.json(rows);
-    } catch (err) {
-        console.error('Error en la búsqueda:', err);
-        res.status(500).json({ error: 'Error en la búsqueda' });
+  } catch (error) {
+    console.error('Error durante el shutdown:', error);
+    process.exit(1);
   }
-});
+}
 
-// Ruta para mostrar el formulario de creación de contraseña
-app.get('/crear-password', (req, res) => {
-  const email = req.query.email || '';
-  console.log('Renderizando página crear-password para email:', email);
-  res.render('parciales/crear-password', {
-    title: 'Crear Contraseña - Sistema de Gestión de Etapa Productiva',
-    email: email
-  });
-});
-
-// Ruta para manejar la creación de contraseña
-app.post('/crear-password', async (req, res) => {
-  const { correoElectronico, password } = req.body;
-  console.log('Recibida solicitud para crear contraseña:', req.body);
-
-  try {
-    // Verificar si el aprendiz existe
-    const [aprendiz] = await pool.query('SELECT * FROM aprendices WHERE correoElectronico = ?', [correoElectronico]);
-
-    if (aprendiz.length === 0) {
-      return res.status(400).json({ success: false, message: 'No se encontró un aprendiz con ese correo electrónico' });
-    }
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await pool.query('UPDATE aprendices SET password = ? WHERE correoElectronico = ?', [hashedPassword, correoElectronico]);
-      res.json({ success: true, message: 'Contraseña creada con éxito' });
-    } catch (error) {
-      console.error('Error al crear la contraseña:', error);
-      res.status(500).json({ success: false, message: 'Error al crear la contraseña' });
-    }
-  });
-
-app.post('/admin/aprendices-data', async (req, res) => {
-  try {
-    const draw = req.body.draw;
-    const start = parseInt(req.body.start);
-    const length = parseInt(req.body.length);
-    const searchValue = req.body.search.value;
-
-    let query = 'SELECT * FROM aprendices';
-    let countQuery = 'SELECT COUNT(*) as total FROM aprendices';
-    let whereClause = [];
-    let params = [];
-
-    // Agregar condiciones de búsqueda
-    if (searchValue) {
-      whereClause.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ? OR numeroDocumento LIKE ?)');
-      params.push(`%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`, `%${searchValue}%`);
-    }
-
-    // Agregar filtros adicionales
-    if (req.body.nombre) {
-      whereClause.push('(nombres LIKE ? OR primerApellido LIKE ? OR segundoApellido LIKE ?)');
-      params.push(`%${req.body.nombre}%`, `%${req.body.nombre}%`, `%${req.body.nombre}%`);
-    }
-    if (req.body.documento) {
-      whereClause.push('numeroDocumento = ?');
-      params.push(req.body.documento);
-    }
-    if (req.body.programaFormacion) {
-      whereClause.push('programaFormacion = ?');
-      params.push(req.body.programaFormacion);
-    }
-    if (req.body.alternativaSeleccionada) {
-      whereClause.push('alternativaSeleccionada = ?');
-      params.push(req.body.alternativaSeleccionada);
-    }
-
-    // Agregar WHERE a las consultas si hay condiciones
-    if (whereClause.length > 0) {
-      const whereString = whereClause.join(' AND ');
-      query += ' WHERE ' + whereString;
-      countQuery += ' WHERE ' + whereString;
-    }
-
-    // Agregar orden y límites
-    query += ' ORDER BY numeroDocumento LIMIT ?, ?';
-    params.push(start, length);
-
-    const [rows] = await pool.query(query, params);
-    const [countResult] = await pool.query(countQuery, params.slice(0, -2));
-
-    res.json({
-      draw: draw,
-      recordsTotal: countResult[0].total,
-      recordsFiltered: countResult[0].total,
-      data: rows
-    });
-  } catch (err) {
-    console.error('Error al obtener datos de aprendices:', err);
-    res.status(500).json({ error: 'Error al obtener datos de aprendices' });
-  }
-});
-
-  // Iniciar el servidor
-  app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
-  });
+module.exports = {
+  app,
+  server,
+  pool,
+  cleanup: gracefulShutdown
+};

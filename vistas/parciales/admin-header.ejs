@@ -1,22 +1,48 @@
-<!-- parcialess/admin-header.ejs -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white">
-    <div class="container-fluid">
-        <div class="navbar-brand">
-            <img src="/img/sena-css-logo.png" alt="SENA Centro de Servicios de Salud Regional Antioquia" class="sena-css-logo">
-        </div>
-        <h1 class="navbar-title mb-0 h1 text-center">SISTEMA DE GESTIÓN DE ETAPA PRODUCTIVA - ADMINISTRADOR</h1>
-    </div>
-</nav>
+<!-- Ruta: vistas/parciales/admin-header.ejs -->
+<!-- Propósito: Header común para todas las páginas del sistema. Incluye el logo del SENA,
+     título principal y barra de navegación que cambia según el rol del usuario. -->
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container-fluid">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-                <a class="nav-link" href="/admin">Regresar</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/admin/listar-aprendices">Listar Aprendices</a>
-            </li>
-        </ul>
-    </div>
-</nav>
+<header>
+    <!-- Barra superior con logo y título -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+        <div class="container-fluid">
+            <div class="navbar-brand">
+                <img src="/img/sena-css-logo.png" alt="SENA Centro de Servicios de Salud Regional Antioquia" class="sena-css-logo">
+            </div>
+            <h1 class="navbar-title mb-0 h1 text-center">SISTEMA DE GESTIÓN DE ETAPA PRODUCTIVA</h1>
+        </div>
+    </nav>
+
+    <!-- Barra de navegación dinámica -->
+    <% if (typeof pagina !== 'undefined') { %>
+        <% if (pagina === 'registro-aprendiz') { %>
+            <!-- Barra de navegación para registro de aprendiz -->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                <div class="container-fluid">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="btnAlternativas">Alternativas de etapa productiva</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        <% } else if (pagina === 'admin') { %>
+            <!-- Barra de navegación para administrador -->
+            <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                <div class="container-fluid">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">Regresar</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/listar-aprendices">Listar Aprendices</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        <% } %>
+    <% } %>
+
+    <!-- Contenedor para mensajes globales -->
+    <div id="globalMessageContainer" class="container mt-3"></div>
+</header>
